@@ -1,0 +1,12 @@
+numpy
+pandas
+scikit-learn>=1.2
+xgboost
+joblib
+imbalanced-learn
+matplotlib
+seaborn
+scipy
+statsmodels
+pyyaml
+tqdm

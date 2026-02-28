@@ -1,0 +1,4 @@
+Test,Statistic,p_value,Significance,Interpretation
+Friedman (all datasets),χ²=96.00,0.000000,***,Cleaning orders differ significantly across all 5 datasets
+Imbalanced datasets (n=3),Mean OSI=17.2%,All p < 0.003,***,"Strong, consistent order effects in imbalanced data"
+Balanced datasets (n=2),Mean OSI=3.6%,All p < 0.012,**,Weaker but significant order effects in balanced data

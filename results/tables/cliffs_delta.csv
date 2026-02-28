@@ -1,0 +1,6 @@
+Dataset,Best_Order,Worst_Order,Cliffs_Delta,Magnitude
+pima,outliers→imputation→balance→label_noise,label_noise→outliers→balance→imputation,1.0,large
+adult,outliers→balance→imputation→label_noise,imputation→label_noise→outliers→balance,1.0,large
+credit_default,balance→imputation→label_noise→outliers,label_noise→balance→imputation→outliers,1.0,large
+breast_cancer,imputation→balance→outliers→label_noise,imputation→label_noise→outliers→balance,0.52,large
+spambase,balance→imputation→outliers→label_noise,imputation→label_noise→balance→outliers,1.0,large

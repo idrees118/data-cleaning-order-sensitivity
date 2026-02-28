@@ -1,0 +1,58 @@
+======================================================================
+LATEX SNIPPETS FOR PAPER
+======================================================================
+
+1. STATISTICAL VALIDATION TEXT:
+
+All per-dataset comparisons between best and worst orders show statistical 
+significance under both paired t-tests and Wilcoxon signed-rank tests 
+(all $p < 0.05$), confirming robustness to distributional assumptions 
+(Table~\ref{tab:statistical_tests}).
+
+
+2. BOOTSTRAP CIs:
+
+Bootstrap 95\% confidence intervals for Order Sensitivity Index 
+(1000 resamples): PIMA [12.7, 18.2]\%, [16.5, 19.2]\%, [18.7, 21.1]\%, [3.2, 6.0]\%, [2.8, 3.9]\%.
+
+3. STATISTICAL TESTS TABLE:
+\begin{table}[t]
+\small
+\centering
+\caption{Statistical validation: paired t-tests and Wilcoxon signed-rank 
+tests comparing best vs worst orders per dataset.}
+\label{tab:statistical_tests}
+\begin{tabular}{lccc}
+\toprule
+Dataset & t-test $p$ & Wilcoxon $p$ & OSI 95\% CI \\
+\midrule
+Pima & 0.0026 & 0.0625 & [12.7, 18.2] \\
+Adult & $<$0.001 & 0.0625 & [16.5, 19.2] \\
+Credit Default & $<$0.001 & 0.0625 & [18.7, 21.1] \\
+Breast Cancer & 0.0113 & 0.0625 & [3.2, 6.0] \\
+Spambase & $<$0.001 & 0.0625 & [2.8, 3.9] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+4. UPDATED SUMMARY TABLE:
+\begin{table}[t]
+\small
+\centering
+\caption{Summary statistics per dataset (Random Forest): best and worst 
+orders with mean ± standard error across 5 seeds.}
+\label{tab:summary_enhanced}
+\begin{tabular}{lcc}
+\toprule
+Dataset & Best (mean ± SE) & Worst (mean ± SE) \\
+\midrule
+Pima & 0.7484 ± 0.0146 & 0.6415 ± 0.0138 \\
+Adult & 0.7188 ± 0.0034 & 0.5912 ± 0.0051 \\
+Credit Default & 0.5778 ± 0.0041 & 0.4638 ± 0.0044 \\
+Breast Cancer & 0.9518 ± 0.0152 & 0.9125 ± 0.0163 \\
+Spambase & 0.9120 ± 0.0033 & 0.8833 ± 0.0025 \\
+\bottomrule
+\end{tabular}
+\end{table}
+

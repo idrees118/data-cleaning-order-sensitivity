@@ -1,0 +1,5 @@
+Metric,Imbalanced,Balanced,Interpretation
+OSI (Order Sensitivity Index),14.3% - 19.7%,3.1% - 4.1%,Percentage range in performance between best and worst orders
+Percentage Improvement,16.7% - 24.6%,3.2% - 4.3%,Relative improvement of best order over worst order
+Cohen's d,3.76 - 14.65,Not reported*,*High due to low variance from deterministic pipeline (n=5)
+Statistical Significance,All p < 0.003,All p < 0.012,All datasets show statistically significant order effects

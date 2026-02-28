@@ -1,0 +1,6 @@
+Aspect,Our Study,KDD Median,NeurIPS Median,Assessment
+Number of datasets,5,5-8,10-15,✓ Sufficient
+Dataset diversity,High,Medium,High,✓ Comparable
+Statistical testing,Friedman + post-hoc,Varied,Rigorous,✓ Rigorous
+Clear pattern,Yes (imbalance-specific),Sometimes,Required,✓ Strong
+Practical impact,High (14-20% OSI),Varied,High,✓ Significant

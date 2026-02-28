@@ -1,0 +1,20 @@
+\begin{table}[t]
+\small
+\centering
+\caption{Heuristic order performance vs best-of-24. Heuristic places 
+label noise correction last (imputation→outliers→balance→label\_noise).}
+\label{tab:heuristic}
+\begin{tabular}{lccc}
+\toprule
+Dataset & Best-of-24 & Heuristic & Gap (pp) \\
+\midrule
+Pima & 0.7484 & 0.7301 & 1.83 \\
+Adult & 0.7188 & 0.7131 & 0.57 \\
+Credit Default & 0.5778 & 0.5624 & 1.55 \\
+Breast Cancer & 0.9518 & 0.9329 & 1.88 \\
+Spambase & 0.9120 & 0.9087 & 0.33 \\
+\midrule
+Mean & 0.7818 & 0.7694 & 1.23 \\
+\bottomrule
+\end{tabular}
+\end{table}

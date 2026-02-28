@@ -1,0 +1,3 @@
+Pattern,In_Best_Orders,In_Worst_Orders,Best_Percentage,Worst_Percentage
+Label Noise First,0,9,0.0%,60.0%
+Label Noise Last,7,0,46.7%,0.0%

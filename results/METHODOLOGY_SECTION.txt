@@ -1,0 +1,132 @@
+
+METHODOLOGY SECTION (Publication-Ready)
+================================================================================
+
+4. EXPERIMENTAL METHODOLOGY
+
+4.1 Experimental Design
+
+We conducted a comprehensive empirical study to quantify the impact of data 
+cleaning operation order on classification performance. Our experimental design 
+employed a fixed test set protocol to ensure valid comparison across different 
+cleaning sequences while controlling for random variation.
+
+4.1.1 Fixed Test Set Protocol
+
+For each dataset and random seed, we performed the following steps:
+
+1. Split data into training (80%) and test (20%) sets using stratified sampling
+   with a fixed random seed
+2. Inject synthetic faults into the training set only (test set remains pristine)
+3. Apply all 24 permutations of the 4 cleaning operations to the faulty training set
+4. Train a RandomForest classifier on each cleaned training set
+5. Evaluate all models on the same pristine test set
+6. Repeat with 5 different random seeds (42, 43, 44, 45, 46)
+
+This protocol ensures that:
+- All cleaning sequences are evaluated on identical test data
+- Performance differences reflect cleaning order effects, not test set variation
+- No information leakage from test set to training occurs
+
+4.1.2 Fault Injection
+
+To simulate real-world data quality issues, we injected three types of synthetic
+faults into training data:
+
+- Label noise (15%): Asymmetric label flips to simulate annotation errors
+- Missing values (10%): Values removed using Missing At Random (MAR) mechanism
+- Outliers (5%): Extreme values injected using z-score > 3 criterion
+
+These fault rates were chosen to represent moderate data quality degradation
+commonly observed in practice.
+
+4.1.3 Cleaning Operations
+
+We evaluated 4 data cleaning operations in all 24 possible orderings:
+
+1. Imputation: KNN imputation (k=5) for missing values
+2. Label Noise Correction: Confidence-based correction (threshold=0.9)
+3. Outlier Removal: Isolation Forest (contamination=0.05)
+4. Class Balancing: SMOTE oversampling (target ratio=0.8)
+
+All operations used deterministic algorithms with fixed random states to ensure
+reproducibility.
+
+4.2 Datasets
+
+We selected 5 benchmark datasets representing diverse characteristics:
+
+Dataset Characteristics:
+- PIMA Diabetes: 767 samples, 8 features, imbalanced (65/35)
+- Adult Income: 30,162 samples, 14 features, imbalanced (76/24)
+- Credit Default: 30,000 samples, 23 features, imbalanced (77/23)
+- Breast Cancer: 569 samples, 30 features, balanced (62/38)
+- Spambase: 4,601 samples, 57 features, balanced (61/39)
+
+This selection provides:
+- Imbalanced vs balanced class distributions
+- Multiple domains (medical, census, financial, text)
+- Different scales (569 to 30,162 samples)
+- Varying feature dimensionality (8 to 57 features)
+
+Dataset count justification: Empirical studies in top-tier data mining venues
+(KDD, ICDM) typically employ 5-8 diverse datasets. Our 5 datasets strategically
+test the hypothesis that order effects are imbalance-dependent, which is more
+valuable than collecting many similar datasets.
+
+4.3 Evaluation Metrics
+
+Primary Metric: Balanced Accuracy (mean of per-class recall)
+- Chosen for robustness to class imbalance
+- Range: [0, 1], higher is better
+- Standard metric for imbalanced classification
+
+Order Sensitivity Metrics:
+1. Order Sensitivity Index (OSI):
+   OSI = (Best - Worst) / Best
+   Measures the relative performance range across all cleaning orders.
+   
+2. Percentage Improvement:
+   Improvement = ((Best - Worst) / Worst) × 100%
+   Measures relative gain of best over worst order.
+
+3. Cohen's d:
+   d = (μ_best - μ_worst) / σ_pooled
+   Effect size measure. Note: Our deterministic pipeline yields low within-order
+   variance (σ ≈ 0.007-0.029), resulting in high Cohen's d values (3.8-14.7).
+   This does not indicate error but rather reflects the high consistency of our
+   experimental protocol. We report OSI and percentage improvement as primary
+   interpretable metrics.
+
+4.4 Statistical Analysis
+
+Per-Dataset Analysis:
+- Paired t-test comparing best vs worst cleaning order (5 paired samples)
+- 95% confidence intervals for mean difference
+- Effect sizes: OSI, percentage improvement, Cohen's d
+
+Cross-Dataset Analysis:
+- Friedman test for overall significance (non-parametric, multiple datasets)
+- Comparison of imbalanced vs balanced dataset groups
+- Average rankings across all datasets
+
+All statistical tests used α = 0.05 significance level.
+
+4.5 Implementation Details
+
+- Classifier: Scikit-learn RandomForestClassifier
+  - n_estimators=100
+  - max_depth=10
+  - class_weight='balanced' (for imbalanced datasets)
+  - random_state fixed per seed
+  
+- Computational Environment:
+  - Python 3.10
+  - Scikit-learn 1.3.0
+  - Imbalanced-learn 0.11.0
+  - NumPy 1.24.3
+  
+- Reproducibility:
+  - All random seeds fixed and documented
+  - Full code available at [repository URL]
+  - Average runtime: ~2 hours for all experiments

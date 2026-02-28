@@ -1,0 +1,6 @@
+Dataset,RF_OSI,logistic_regression_OSI,Ratio
+pima,14.28%,4.66%,0.33×
+adult,17.75%,10.94%,0.62×
+credit_default,19.74%,25.42%,1.29×
+spambase,3.15%,2.32%,0.74×
+breast_cancer,4.13%,5.36%,1.30×

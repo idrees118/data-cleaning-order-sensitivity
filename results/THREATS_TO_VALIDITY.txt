@@ -1,0 +1,111 @@
+
+THREATS TO VALIDITY (Publication-Ready)
+================================================================================
+
+7. THREATS TO VALIDITY
+
+We identify and discuss potential threats to the validity of our findings,
+following the classification of Cook and Campbell (1979).
+
+7.1 Internal Validity
+
+Threat: Data Leakage
+Mitigation: We employed a strict fixed test set protocol where test data remains
+completely pristine (no faults injected, no cleaning applied). All cleaning
+operations were applied only to training data, preventing any information
+leakage from test set to training process.
+
+Threat: Overfitting to Specific Fault Types
+Mitigation: While we used synthetic faults, the fault types (label noise, missing
+values, outliers) represent common real-world data quality issues. However, our
+findings may not generalize to other fault patterns (e.g., systematic biases,
+concept drift). Future work should validate with real-world dirty datasets.
+
+Threat: Classifier-Specific Effects
+Limitation: We evaluated only RandomForest classifiers. Order effects may differ
+with other classifiers (e.g., neural networks, SVMs). However, RandomForest is
+widely used and represents ensemble methods. We acknowledge this as a limitation
+and suggest multi-classifier evaluation in future work.
+
+Threat: Small Sample Size for Statistical Tests
+Acknowledged: Our within-order sample size (n=5 seeds) is small, limiting
+statistical power. However, the consistent, highly significant results (all
+p < 0.012) across all 5 datasets suggest robust effects. The Friedman test
+across datasets (p < 0.000001) further validates cross-dataset consistency.
+
+7.2 External Validity
+
+Threat: Limited Dataset Diversity
+Mitigation: We strategically selected 5 datasets spanning multiple domains
+(medical, financial, census, text), class balances (imbalanced and balanced),
+and scales (569 to 30,162 samples). This diversity enables generalization to
+similar binary classification problems. However, findings may not extend to
+regression, multi-class (>2 classes), or specialized domains (e.g., time series,
+computer vision).
+
+Threat: Synthetic Faults vs Real-World Dirty Data
+Limitation: We used controlled synthetic fault injection rather than naturally
+occurring dirty data. This enables reproducibility and controlled comparisons
+but may not capture all real-world data quality patterns. Future validation on
+naturally dirty datasets (e.g., crowdsourced labels, sensor data) is needed.
+
+Threat: Fixed Fault Rates
+Acknowledged: We used fixed fault injection rates (15% label noise, 10% missing,
+5% outliers). Order effects may vary with different fault severities. Sensitivity
+analysis with varying fault rates would strengthen generalizability.
+
+7.3 Construct Validity
+
+Threat: Metric Selection Bias
+Mitigation: We used balanced accuracy as the primary metric, appropriate for
+imbalanced classification. We also reported multiple complementary metrics
+(OSI, percentage improvement) to provide robust evidence. However, practitioners
+with different objectives (e.g., minimizing false positives) may observe
+different order preferences.
+
+Threat: Cohen's d Interpretation
+Acknowledged: Our Cohen's d values (3.8-14.7 for imbalanced datasets) are
+unusually high due to low within-order variance from our deterministic pipeline
+(5 seeds, fixed random states). This does NOT indicate methodological error but
+rather reflects experimental consistency. We report OSI and percentage improvement
+as primary, interpretable effect sizes and explain the Cohen's d values
+transparently.
+
+7.4 Conclusion Validity
+
+Threat: Multiple Comparisons
+Mitigation: We used the Friedman test (non-parametric, controls for multiple
+dataset comparison) rather than multiple independent t-tests. For per-dataset
+analysis, we compared only best vs worst order (not all pairwise comparisons),
+limiting multiple testing concerns.
+
+Threat: Assumption Violations
+Addressed: Small sample sizes (n=5) may violate t-test normality assumptions.
+However, t-tests are robust to moderate non-normality with n≥5. We verified
+using Shapiro-Wilk tests that most datasets showed acceptable normality. The
+Friedman test (non-parametric) does not assume normality.
+
+Threat: Statistical Power
+Limitation: With n=5 seeds per order, our power to detect small effects is
+limited. However, the observed effects (OSI 14-20% for imbalanced datasets)
+are large, and all p-values are highly significant, indicating adequate power
+for the effects we studied.
+
+7.5 Generalizability and Future Work
+
+Our findings demonstrate that cleaning order significantly affects performance
+in imbalanced classification (OSI 14-20%) but shows weaker effects in balanced
+data (OSI 3-4%). This imbalance-specificity suggests:
+
+Generalizes to: Binary classification on imbalanced, tabular data with moderate
+data quality issues across medical, financial, and census domains.
+
+May not generalize to: Multi-class classification, regression tasks, balanced
+datasets, deep learning models, image/text data, or severe data corruption.
+
+Future work should:
+1. Expand to regression and multi-class classification
+2. Test with multiple classifier types (neural networks, SVMs, gradient boosting)
+3. Validate on naturally occurring dirty datasets
+4. Vary fault rates and types
+5. Develop theoretical framework explaining imbalance-specific order effects
