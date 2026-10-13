@@ -1,0 +1,4 @@
+classifier,n_datasets,median_rank,mean_regret_pp,mean_random_regret_pp,datasets_rule_beats_random
+logistic_regression,10,4.5,0.504024,1.45521,8
+random_forest,10,5,0.604645,1.86205,9
+xgboost,10,8.5,1.58036,2.50303,8

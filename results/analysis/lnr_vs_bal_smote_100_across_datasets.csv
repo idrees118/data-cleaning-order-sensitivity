@@ -1,0 +1,4 @@
+stage,classifier,n_datasets,datasets_favouring_lnr_first,median_diff_pp,wilcoxon_p
+smote_100,logistic_regression,7,2,-0.386905,0.375
+smote_100,random_forest,7,1,-1.25492,0.109375
+smote_100,xgboost,7,2,-2.56224,0.15625

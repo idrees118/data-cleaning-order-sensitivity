@@ -1,0 +1,28 @@
+label,dataset,classifier,n_seeds,osi_pct,osi_null_pct,osi_excess_pct,p_perm,p_perm_bh
+5 seeds (main),pima,logistic_regression,5,2.734,3.137,-0.4034,0.7754,0.7754
+5 seeds (main),pima,random_forest,5,10.78,7.182,3.602,0.0018,0.00324
+5 seeds (main),pima,xgboost,5,11.48,8.152,3.33,0.005399,0.007964
+5 seeds (main),qsar_biodeg,logistic_regression,5,5.629,3.093,2.536,9.999e-05,0.0003
+5 seeds (main),qsar_biodeg,random_forest,5,6.894,5.657,1.237,0.07189,0.08088
+5 seeds (main),qsar_biodeg,xgboost,5,8.411,6.037,2.374,0.005899,0.007964
+5 seeds (main),spambase,logistic_regression,5,2.601,1.649,0.9513,0.0006999,0.001575
+5 seeds (main),spambase,random_forest,5,2.1,1.419,0.681,0.0015,0.002893
+5 seeds (main),spambase,xgboost,5,3.378,2.481,0.8969,0.0129,0.01583
+5 seeds (seeds20 subset),pima,logistic_regression,5,2.734,3.12,-0.3864,0.7641,0.7754
+5 seeds (seeds20 subset),pima,random_forest,5,10.78,7.197,3.587,0.002,0.003375
+5 seeds (seeds20 subset),pima,xgboost,5,11.48,8.142,3.341,0.005899,0.007964
+5 seeds (seeds20 subset),qsar_biodeg,logistic_regression,5,5.629,3.082,2.548,9.999e-05,0.0003
+5 seeds (seeds20 subset),qsar_biodeg,random_forest,5,6.894,5.636,1.258,0.06329,0.0743
+5 seeds (seeds20 subset),qsar_biodeg,xgboost,5,8.411,6.02,2.39,0.0048,0.007623
+5 seeds (seeds20 subset),spambase,logistic_regression,5,2.601,1.655,0.946,0.0003,0.0007363
+5 seeds (seeds20 subset),spambase,random_forest,5,2.1,1.415,0.6842,0.0015,0.002893
+5 seeds (seeds20 subset),spambase,xgboost,5,3.378,2.486,0.8917,0.0111,0.01427
+20 seeds,pima,logistic_regression,20,1.963,1.855,0.1086,0.3534,0.3816
+20 seeds,pima,random_forest,20,7.224,3.383,3.841,0.0002,0.0005399
+20 seeds,pima,xgboost,20,7.976,3.569,4.407,9.999e-05,0.0003
+20 seeds,qsar_biodeg,logistic_regression,20,3.181,1.733,1.448,9.999e-05,0.0003
+20 seeds,qsar_biodeg,random_forest,20,5.321,2.435,2.886,9.999e-05,0.0003
+20 seeds,qsar_biodeg,xgboost,20,6.816,2.92,3.897,9.999e-05,0.0003
+20 seeds,spambase,logistic_regression,20,1.6,0.6998,0.9004,9.999e-05,0.0003
+20 seeds,spambase,random_forest,20,1.578,0.6789,0.8987,9.999e-05,0.0003
+20 seeds,spambase,xgboost,20,3.127,1.263,1.864,9.999e-05,0.0003

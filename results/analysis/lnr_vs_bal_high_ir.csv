@@ -1,0 +1,7 @@
+stage,dataset,classifier,n_pairs,n_seeds,mean_diff_pp,sd_diff_pp,seeds_favouring_lnr_first,pairs_favouring_lnr_first,label_step_measure,label_actions_lnr_first,label_actions_bal_first
+high_ir,kc1,logistic_regression,12,5,3.53914,1.22325,5,0.533333,n_relabelled,159.567,112.883
+high_ir,kc1,random_forest,12,5,-2.70021,3.70054,1,0.316667,n_relabelled,159.567,112.883
+high_ir,kc1,xgboost,12,5,-0.150363,1.70771,3,0.433333,n_relabelled,159.567,112.883
+high_ir,ozone,logistic_regression,12,5,-16.5012,3.16869,0,0,n_relabelled,89.2333,43.5167
+high_ir,ozone,random_forest,12,5,-13.9346,5.93451,0,0.0333333,n_relabelled,89.2333,43.5167
+high_ir,ozone,xgboost,12,5,-9.72407,2.98362,0,0.0666667,n_relabelled,89.2333,43.5167

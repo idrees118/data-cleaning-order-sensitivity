@@ -1,0 +1,19 @@
+threshold,comparison,n,positive,hl_pp,ci_lo_pp,ci_hi_pp,wilcoxon_p
+0.6,t=0.6 random_forest,10,10,3.979,1.803,6.059,0.001953
+0.6,t=0.6 logistic_regression,10,8,2.039,0.5632,3.841,0.01367
+0.6,t=0.6 xgboost,10,10,4.192,2.15,6.811,0.001953
+0.7,t=0.7 random_forest,10,8,1.616,-0.1019,2.892,0.08398
+0.7,t=0.7 logistic_regression,10,8,1.07,0.08736,1.94,0.04883
+0.7,t=0.7 xgboost,10,8,1.636,-0.5152,3.611,0.1055
+0.8,t=0.8 random_forest,10,4,-0.3753,-2.322,0.7655,0.5566
+0.8,t=0.8 logistic_regression,10,6,0.2463,-0.9014,1.067,0.5566
+0.8,t=0.8 xgboost,10,4,-0.5469,-2.723,0.3669,0.2754
+0.9,t=0.9 random_forest,10,3,-0.4827,-1.057,0.1378,0.06445
+0.9,t=0.9 logistic_regression,10,5,-0.0783,-1.406,0.1806,0.6953
+0.9,t=0.9 xgboost,10,1,-0.9173,-1.63,-0.5013,0.003906
+,"main: BAL first minus LNR first, random_forest",10,7,1.397,-0.4099,3.377,0.1309
+,"main: BAL first minus LNR first, logistic_regression",10,8,1.039,0.1913,1.823,0.02734
+,"main: BAL first minus LNR first, xgboost",10,7,1.724,-0.4168,3.586,0.1055
+,"fold-safe correction gain, random_forest",10,9,1.392,0.5758,2.461,0.005859
+,"fold-safe correction gain, logistic_regression",10,8,1.486,0.54,2.363,0.01953
+,"fold-safe correction gain, xgboost",10,9,1.872,0.6144,2.944,0.009766

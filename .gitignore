@@ -1,21 +1,5 @@
-# Python
 __pycache__/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-*.log
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
+*.pyc
 .DS_Store
-Thumbs.db
-
-# Temporary files
-*.tmp
-*_output.txt
+.ipynb_checkpoints/
+results/*/parts/

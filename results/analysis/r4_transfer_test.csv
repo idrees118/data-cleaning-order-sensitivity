@@ -1,0 +1,4 @@
+classifier,reduction_pct,ci_lo_pct,ci_hi_pct,wilcoxon_p_one_sided
+logistic_regression,65.36,27.69,91.59,0.009766
+random_forest,67.53,30.74,90.49,0.009766
+xgboost,36.86,-0.5422,69.16,0.06543
