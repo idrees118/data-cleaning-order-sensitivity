@@ -2,1215 +2,198 @@
 
 # Data Cleaning Order Sensitivity
 
-### Quantifying how preprocessing order changes downstream machine-learning performance
+**Does the order of your data-cleaning steps change your model's accuracy, and by how much once chance is ruled out?**
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
-[![XGBoost](https://img.shields.io/badge/XGBoost-Classifier-EB5B2D)](https://xgboost.ai/)
-[![Data Quality](https://img.shields.io/badge/Data-Quality-2E8B57)](#why-this-matters)
-[![Reproducibility](https://img.shields.io/badge/Reproducible-Experiments-6F42C1)](#reproducibility)
-[![Zenodo](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.20678671-1682D4)](https://doi.org/10.5281/zenodo.20678671)
-
-**Data Quality · Pipeline Design · Data Preprocessing · Reproducible ML · Experimentation · Python**
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5-F7931E?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-3.1-EB5B2D)](https://xgboost.ai/)
+[![imbalanced-learn](https://img.shields.io/badge/imbalanced--learn-0.14-2E8B57)](https://imbalanced-learn.org/)
+[![Runs](https://img.shields.io/badge/experiment-41%2C185%20runs-6F42C1)](#the-experiment)
 
 </div>
 
 ---
 
-## Overview
+## In one minute
 
-Data-cleaning pipelines are usually built as a sequence of reasonable operations:
+Before a model is trained on tabular data, the data usually go through four repairs: **fill missing values, remove outliers, fix wrong labels, balance the classes**. Most pipelines apply them in whatever order is conventional. Each step changes the data the next step receives, so the order can change the final model.
 
-```text
-Missing-value handling
-        ↓
-Outlier removal
-        ↓
-Class balancing
-        ↓
-Label-noise correction
-        ↓
-Model training
-```
+Measuring this is harder than it looks. If you try 24 orders on a few random train/test splits, the best and the worst will always differ, **even when order has no effect at all**. Most comparisons report that gap as if it were real.
 
-But there is a question that is rarely tested explicitly:
+This project:
 
-> **Does changing the order of these operations change the final result?**
+1. **Measures the gap correctly.** It introduces the *Order Sensitivity Index* (OSI) and a permutation test that estimates how large the gap would be by chance alone.
+2. **Tests every order exhaustively.** All 24 orders of the four steps, 12 datasets, 3 classifiers and 9 experimental conditions: 41,185 runs.
+3. **Finds the cause of the largest effect.** Injected errors are tracked, so every label the cleaning step changes can be checked as right or wrong.
 
-This project investigates that question systematically.
+## Key findings
 
-Four common data-cleaning operations are applied in **every possible order**, producing:
-
-```text
-4! = 24 unique preprocessing pipelines
-```
-
-Each ordering is evaluated under the same controlled experimental conditions across multiple datasets, random seeds, and classifier families.
-
-The goal is not simply to identify one high-performing pipeline.
-
-The goal is to measure **how sensitive a machine-learning workflow is to preprocessing order itself**.
-
-To quantify that effect, the project introduces the **Order Sensitivity Index (OSI)**.
-
----
-
-# Why this matters
-
-A preprocessing pipeline is not just a list of independent transformations.
-
-Each operation changes the data received by every operation that comes after it.
-
-For example:
-
-```text
-Pipeline A
-
-Imputation
-    ↓
-Outlier Removal
-    ↓
-SMOTE
-    ↓
-Label-Noise Correction
-```
-
-and
-
-```text
-Pipeline B
-
-SMOTE
-    ↓
-Label-Noise Correction
-    ↓
-Imputation
-    ↓
-Outlier Removal
-```
-
-contain exactly the same four operations.
-
-But they can produce different training datasets.
-
-Why?
-
-Because operations interact.
-
-- SMOTE depends on the current minority-class neighbourhood.
-- Outlier detection depends on the feature distribution at the point it is applied.
-- Label-noise correction depends on the quality of the data used to estimate class probabilities.
-- Imputation changes distances and feature relationships used by later transformations.
-
-That makes preprocessing order a potential **hidden source of variation** in machine-learning pipelines.
-
-If two experiments use the same model but different preprocessing sequences, some of the performance difference may come from the pipeline rather than the model itself.
-
----
-
-# Project at a glance
-
-| Component | Scale |
-|---|---:|
-| Data-cleaning operations | **4** |
-| Possible operation orders | **24** |
-| Main datasets | **7** |
-| Classifier families | **3** |
-| Random seeds | **5** |
-| Controlled evaluations | **2,520** |
-| Primary metric | **Balanced Accuracy** |
-| Proposed diagnostic | **Order Sensitivity Index (OSI)** |
-
-The experiment was designed so that **pipeline order is the main variable being changed**.
-
----
-
-# Cleaning operations
-
-The study evaluates four common preprocessing operations.
-
-| Operation | Method used |
+| | Finding |
 |---|---|
-| **Missing-value imputation** | KNN imputation |
-| **Outlier handling** | Isolation Forest |
-| **Class balancing** | SMOTE |
-| **Label-noise correction** | confidence-based / Confident Learning approach |
+| **Chance is large** | In every dataset–classifier pair, chance alone explains **more than half** of the gap between the best and worst order. |
+| **Real effects remain** | Order still matters beyond chance in **15 of 30** pairs, by **0.6 to 2.8 points** of balanced accuracy. |
+| **Label noise drives it** | Significant pairs rise from **0 of 21** at 5% label noise to **11 of 21** at 20%. When label errors are spread evenly across classes, the effect disappears. |
+| **The key decision** | The most consistent ordering decision is **whether to balance classes before or after correcting labels**. |
+| **Why** | A label-correction model trained on imbalanced data "fixes" correct minority labels. On the Adult dataset it changed 2,451 labels, and **1,435 of them were already correct**. |
+| **The fix** | Balancing the classes *inside* the correction model's own cross-validation folds raised balanced accuracy by **1.4 to 1.9 points for all three classifiers** (significant after Holm correction). |
+| **Practical defaults** | An order chosen on other datasets had **37–68% lower regret** on a new dataset than a randomly chosen order. |
 
-Every possible permutation of these four operations is evaluated.
-
-For example:
-
-```text
-IMP → OUT → BAL → LNR
-IMP → BAL → OUT → LNR
-LNR → IMP → BAL → OUT
-BAL → LNR → IMP → OUT
-...
-```
-
-until all **24 possible sequences** have been tested.
+<p align="center">
+  <img src="figures/fig_noise_floor.png" width="88%" alt="Observed order sensitivity against the level expected by chance">
+  <br><sub><b>Raw OSI vs. the chance baseline.</b> Open markers show what chance alone produces. Only the gap between the two markers is real order sensitivity.</sub>
+</p>
 
 ---
 
-# Experimental workflow
+## How it works
+
+### The four steps
+
+| Step | Code | Method (main set) | Alternative set |
+|---|---|---|---|
+| Missing-value imputation | `IMP` | k-nearest neighbours (k = 5) | Median |
+| Outlier removal | `OUT` | Isolation Forest (5%) | Local Outlier Factor |
+| Label noise correction | `LNR` | Out-of-fold random forest, relabel at confidence ≥ 0.7 | Edited nearest neighbours |
+| Class balancing | `BAL` | SMOTE / SMOTENC to ratio 0.8 | Random oversampling |
+
+### One run, step by step
 
 ```mermaid
-flowchart TD
-
-    A["Clean Dataset"] --> B["Stratified Train / Test Split"]
-
-    B --> C["Training Set"]
-    B --> D["Pristine Test Set"]
-
-    C --> E["Inject Controlled Data-Quality Problems"]
-
-    E --> F["Generate All 24 Cleaning Orders"]
-
-    F --> G1["Pipeline 1"]
-    F --> G2["Pipeline 2"]
-    F --> G3["..."]
-    F --> G4["Pipeline 24"]
-
-    G1 --> H["Cleaned Training Data"]
-    G2 --> H
-    G3 --> H
-    G4 --> H
-
-    H --> I["Train Classifier"]
-
-    D --> J["Same Clean Test Set"]
-    I --> K["Evaluate"]
-    J --> K
-
-    K --> L["Balanced Accuracy"]
-    L --> M["Order Sensitivity Index"]
-    L --> N["Statistical Analysis"]
+flowchart LR
+    A[Dataset] --> B[Stratified 80/20 split]
+    B --> T[Test set<br/>kept clean]
+    B --> C[Training set]
+    C --> D[Inject known errors:<br/>flipped labels,<br/>missing values, outliers]
+    D --> E[Clean with one of<br/>24 step orders]
+    E --> F[Train classifier<br/>LR / RF / XGBoost]
+    F --> G[Balanced accuracy<br/>on the clean test set]
+    T --> G
 ```
 
-A central design principle is that the **test set remains untouched**.
+Within a seed, all 24 orders start from the same split and the same injected errors. The only thing that changes is the order.
 
-Within each random seed:
-
-1. the clean dataset is split into training and test data,
-2. the test set is kept pristine,
-3. controlled faults are introduced only into the training data,
-4. every preprocessing order operates on the same experimental starting point,
-5. every resulting model is evaluated on the same clean test set.
-
-This reduces the risk that differences between pipeline orders are actually caused by different test distributions.
-
----
-
-# Controlled data-quality problems
-
-The training data is deliberately degraded before cleaning.
-
-The experimental setup includes controlled problems such as:
-
-### Missing values
-
-Missingness is introduced under a Missing At Random setting.
+### The Order Sensitivity Index
 
 ```text
-Clean training data
-        ↓
-Controlled missingness
-        ↓
-Imputation at different pipeline positions
+        best mean score − worst mean score
+OSI  =  ----------------------------------
+                best mean score
 ```
 
----
+OSI alone is biased upward: with many orders and few seeds, the best and worst always differ. The permutation test fixes this. Within each seed it shuffles the scores between orders 10,000 times and recomputes OSI each time. That gives:
 
-### Outliers
+- **OSI₀**: the OSI expected when order has no effect
+- **ΔOSI = OSI − OSI₀**: the sensitivity beyond chance
+- **a p-value** for each dataset–classifier pair, corrected for false discovery rate
 
-Extreme feature values are injected to represent measurement or data-quality errors.
-
-```text
-Normal observations
-        ↓
-Injected extreme values
-        ↓
-Isolation Forest applied at different stages
-```
+The test needs no extra model training. It reuses scores that any order comparison already produces, so it can check any pipeline comparison, not just these four steps.
 
 ---
 
-### Label noise
+## Results at a glance
 
-A portion of training labels is deliberately corrupted.
-
-The injected noise is class-dependent, with minority-class examples receiving a greater share of the corruption.
-
-This allows the experiment to study the interaction between:
-
-```text
-Label Noise Correction
-        ↕
-Class Rebalancing
-```
-
----
-
-### Class imbalance
-
-The datasets include both balanced and imbalanced classification problems.
-
-SMOTE is used as the class-balancing operation, allowing the experiment to measure whether its position inside the pipeline changes downstream performance.
+<table>
+<tr>
+<td width="50%"><img src="figures/fig_dose.png" alt="Order sensitivity against label noise rate and oversampling ratio"><br><sub><b>More label noise, more order sensitivity.</b></sub></td>
+<td width="50%"><img src="figures/fig_precision.png" alt="Precision of label correction before and after balancing"><br><sub><b>Balancing first makes label correction more accurate</b> on 9 of 10 datasets.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="figures/fig_lnr_bal.png" alt="Correction first minus balancing first"><br><sub><b>Balancing before correction wins on most datasets.</b> Credit Default is the clear exception.</sub></td>
+<td width="50%"><img src="figures/fig_positions.png" alt="Effect of each step's position"><br><sub><b>Where each step belongs.</b> Balancing does best early, label correction late.</sub></td>
+</tr>
+</table>
 
 ---
 
-# The Order Sensitivity Index
+## The experiment
 
-Absolute performance gaps are difficult to compare between datasets because datasets have different baseline difficulty.
+| | |
+|---|---|
+| Datasets | 12 public binary datasets (UCI, OpenML): medical, credit, income, spam, chemistry, physics, air quality, software defects |
+| Classifiers | Logistic regression, Random Forest, XGBoost (fixed hyperparameters, no tuning per pipeline) |
+| Orders | All 24 orders of the four steps, plus all 41 shorter sequences |
+| Seeds | 5 per condition (20 in a stability check) |
+| Metric | Balanced accuracy |
+| Total | **41,185 runs** across 9 conditions |
 
-To make order sensitivity comparable, the project introduces the **Order Sensitivity Index (OSI)**.
+**Conditions:** main setting · natural data with no injected errors · alternative cleaning methods · label noise at 5, 10 and 20% · symmetric label noise · oversampling ratios 0.5 and 1.0 · severe class imbalance · shorter step sequences · 20 seeds.
 
-For dataset \(D\):
-
-```text
-      Best Performance − Worst Performance
-OSI = ------------------------------------
-             Best Performance
-```
-
-or formally:
-
-```text
-OSI(D) =
-max P(D, π) − min P(D, π)
--------------------------
-       max P(D, π)
-```
-
-where:
-
-```text
-π = a preprocessing ordering
-P = balanced accuracy
-```
+Every data-dependent step is fitted on training data only. The test set is never cleaned, resampled or corrupted.
 
 ---
 
-## Interpretation
-
-### OSI ≈ 0
-
-The dataset is relatively insensitive to preprocessing order.
-
-Different sequences produce similar performance.
-
-### Higher OSI
-
-The pipeline is more sensitive to sequencing.
-
-Choosing a poor order can result in measurable performance loss even when:
-
-- the same data is used,
-- the same operations are used,
-- the same classifier is used,
-- and the same hyperparameters are used.
-
----
-
-# Datasets
-
-The main study evaluates seven publicly available binary-classification datasets.
-
-| Dataset | Samples | Features | Class profile |
-|---|---:|---:|---|
-| **PIMA Diabetes** | 767 | 8 | Imbalanced |
-| **Adult Income** | 30,162 | 14 | Imbalanced |
-| **Credit Default** | 30,000 | 23 | Imbalanced |
-| **Breast Cancer Wisconsin** | 569 | 30 | Relatively balanced |
-| **Spambase** | 4,601 | 57 | Relatively balanced |
-| **Ionosphere** | 351 | 34 | Relatively balanced |
-| **Banknote Authentication** | 1,372 | 4 | Relatively balanced |
-
-The datasets provide variation in:
-
-- sample size,
-- feature dimensionality,
-- application domain,
-- minority-class size,
-- and class imbalance.
-
-An additional MAGIC Gamma Telescope experiment was also conducted as a supplementary analysis, but the main conclusions are based on the seven datasets above.
-
----
-
-# Models
-
-The complete preprocessing-order experiment is evaluated using three classifier families.
-
-### Random Forest
-
-A non-linear ensemble model that can be sensitive to changes in the composition of the training data.
-
-### Logistic Regression
-
-A linear baseline with a substantially different learning mechanism.
-
-### XGBoost
-
-A gradient-boosted tree model used to test whether ordering effects persist under another ensemble-learning approach.
-
-The study intentionally uses fixed hyperparameters during the controlled comparisons.
-
-The purpose is not to obtain the highest possible predictive performance.
-
-The purpose is to isolate the effect of **pipeline order**.
-
----
-
-# Experiment scale
-
-For each classifier:
-
-```text
-7 datasets
-×
-24 preprocessing orders
-×
-5 random seeds
-=
-840 controlled runs
-```
-
-Across three classifiers:
-
-```text
-840 × 3 = 2,520 evaluations
-```
-
-For every seed, all preprocessing orders share the same underlying train/test partition.
-
-This creates a controlled within-seed comparison.
-
----
-
-# Main findings
-
-The experiments show that preprocessing order is not always a neutral implementation decision.
-
-Under Random Forest, OSI values ranged from:
-
-```text
-1.40% → 8.39%
-```
-
-The largest observed difference between the best and worst preprocessing sequences reached:
-
-```text
-6.19 percentage points
-```
-
-in balanced accuracy.
-
----
-
-## Random Forest results
-
-| Dataset | OSI | Best accuracy | Worst accuracy | Gap |
-|---|---:|---:|---:|---:|
-| **PIMA** | **8.39%** | 0.7377 | 0.6758 | **6.19 pp** |
-| **Credit Default** | **8.28%** | 0.5994 | 0.5498 | **4.96 pp** |
-| Adult Income | 3.02% | 0.7202 | 0.6985 | 2.17 pp |
-| Ionosphere | 3.17% | 0.9011 | 0.8725 | 2.86 pp |
-| Breast Cancer | 2.05% | 0.9375 | 0.9183 | 1.92 pp |
-| Spambase | 1.85% | 0.9130 | 0.8961 | 1.69 pp |
-| Banknote | 1.40% | 0.9816 | 0.9679 | 1.38 pp |
-
-Five of the seven datasets showed statistically significant best-versus-worst ordering differences under Random Forest after multiple-comparison correction.
-
----
-
-# Class imbalance and order sensitivity
-
-One of the clearest patterns appeared under Random Forest.
-
-Mean OSI for the three imbalanced datasets:
-
-```text
-6.56%
-```
-
-Mean OSI for the four relatively balanced datasets:
-
-```text
-2.12%
-```
-
-That corresponds to roughly:
-
-```text
-3.1× higher order sensitivity
-```
-
-for the imbalanced group under Random Forest.
-
----
-
-## Classifier comparison
-
-| Dataset | Random Forest OSI | Logistic Regression OSI | XGBoost OSI |
-|---|---:|---:|---:|
-| PIMA | 8.39% | 5.04% | 7.07% |
-| Adult | 3.02% | 2.26% | 4.60% |
-| Credit Default | 8.28% | 2.61% | 0.94% |
-| Breast Cancer | 2.05% | 3.92% | 3.71% |
-| Spambase | 1.85% | 2.02% | 3.40% |
-| Ionosphere | 3.17% | 5.71% | 7.67% |
-| Banknote | 1.40% | 1.20% | 2.09% |
-
-The strongest imbalance-related amplification appeared for Random Forest.
-
-The same 3.1× pattern was not observed for Logistic Regression or XGBoost under the evaluated conditions.
-
----
-
-# The strongest interaction: label noise and SMOTE
-
-The most important pairwise interaction in the study involved:
-
-```text
-Label-Noise Correction
-          ↕
-        SMOTE
-```
-
-Why does the order matter?
-
-SMOTE creates synthetic minority-class observations using existing minority-class examples.
-
-If incorrectly labelled minority examples are still present when SMOTE runs, those examples can influence the synthetic population.
-
-Conceptually:
-
-```text
-Noisy minority observations
-          ↓
-SMOTE
-          ↓
-Synthetic observations derived
-from an already corrupted pool
-```
-
-However, reversing the order is not automatically better in every dataset.
-
-For small minority classes, performing label-noise correction too early may provide too little data for reliable probability estimation.
-
-The experiments therefore do **not** support one universal sequence that is optimal everywhere.
-
-Instead, the results show that:
-
-> **The usefulness of a preprocessing order depends on the dataset and on interactions between the transformations.**
-
----
-
-# Operation-position analysis
-
-The repository also analyses whether individual operations systematically perform better when placed earlier or later in the pipeline.
-
-![Operation Position Heatmap](results/figures/operation_position_heatmap.png)
-
-Across all datasets and classifiers, simple global position effects are relatively weak.
-
-This is important because it suggests that the problem cannot be reduced to a rule such as:
-
-```text
-"Always put operation X first."
-```
-
-Interactions between operations are more informative than isolated positions.
-
----
-
-# Best and worst order patterns
-
-The repository also compares positional patterns found in stronger and weaker pipeline configurations.
-
-![Best and Worst Order Patterns](results/figures/order_pattern_analysis.png)
-
-One notable pattern was that class balancing frequently appeared late in poor-performing configurations.
-
-However, these findings are interpreted as patterns observed under the evaluated experimental settings rather than universal preprocessing rules.
-
----
-
-# Practical fixed-order comparison
-
-A commonly reasonable sequence was also evaluated:
-
-```text
-Imputation
-    ↓
-Outlier Removal
-    ↓
-Class Balancing
-    ↓
-Label-Noise Correction
-```
-
-Under Random Forest, this fixed ordering was sometimes close to the best-performing pipeline and sometimes substantially worse.
-
-| Dataset | Best of 24 | Fixed order | Gap |
-|---|---:|---:|---:|
-| PIMA | 0.7377 | 0.7304 | 0.73 pp |
-| Adult | 0.7202 | 0.6985 | 2.17 pp |
-| Credit Default | 0.5994 | 0.5501 | **4.93 pp** |
-| Breast Cancer | 0.9375 | 0.9264 | 1.11 pp |
-| Spambase | 0.9130 | 0.9066 | 0.64 pp |
-| Ionosphere | 0.9011 | 0.8830 | 1.81 pp |
-| Banknote | 0.9816 | 0.9712 | 1.05 pp |
-
-Mean gap:
-
-```text
-1.78 percentage points
-```
-
-This illustrates why a conventional default preprocessing order should not automatically be assumed to be optimal.
-
----
-
-# Statistical analysis
-
-The project uses several complementary statistical tools.
-
-### Balanced Accuracy
-
-Used as the primary predictive-performance metric because it weights both classes equally and is therefore more informative than standard accuracy on imbalanced datasets.
-
----
-
-### Paired comparisons
-
-Best and worst pipeline orders are compared within the same random-seed setting.
-
----
-
-### Benjamini–Hochberg correction
-
-Multiple comparisons across dataset–classifier combinations are controlled using false-discovery-rate correction.
-
----
-
-### Cliff's Delta
-
-A non-parametric effect-size measure used to quantify separation between best- and worst-order outcomes.
-
----
-
-### Cohen's d
-
-Also reported, although interpreted cautiously because the controlled paired design can produce very low within-seed variance.
-
----
-
-### Bootstrap confidence intervals
-
-Bootstrap intervals are used as an additional estimate of uncertainty around order-sensitivity measurements.
-
----
-
-### Spearman correlation
-
-The relationship between class imbalance and OSI is also investigated.
-
-Under Random Forest, the seven-dataset analysis reports:
-
-```text
-rs = 0.82
-p = 0.023
-```
-
-indicating a positive relationship between imbalance ratio and order sensitivity under the evaluated setting.
-
----
-
-# Why this project is relevant to Data Engineering
-
-Although the study evaluates downstream machine-learning performance, the underlying problem is strongly connected to **data pipeline engineering**.
-
-A transformation pipeline is an ordered system.
-
-```text
-Raw Data
-   ↓
-Transformation A
-   ↓
-Transformation B
-   ↓
-Transformation C
-   ↓
-Downstream Consumer
-```
-
-Changing the ordering can change the final dataset even when every individual step is valid.
-
-That has implications for several engineering areas.
-
----
-
-## Data quality
-
-This project treats data cleaning as a system of interacting transformations rather than a collection of independent fixes.
-
-It evaluates how:
-
-- missing-data handling,
-- outlier removal,
-- resampling,
-- and label-quality correction
-
-change the state of the data passed downstream.
-
----
-
-## Pipeline design
-
-The project demonstrates that transformation order itself can be part of pipeline logic.
-
-A reproducible pipeline should therefore capture:
-
-```text
-What transformation ran?
-        +
-With what configuration?
-        +
-On which data?
-        +
-In what order?
-```
-
----
-
-## Pipeline testing
-
-Controlled faults are deliberately injected into the data so that pipeline behaviour can be evaluated under known degradation.
-
-This is conceptually similar to fault injection and mutation testing in software engineering.
-
-Instead of asking only:
-
-> "Does the pipeline run?"
-
-the project asks:
-
-> "How does the pipeline behave when the input contains specific data-quality problems?"
-
----
-
-## Reproducibility
-
-Experiment configuration is controlled through:
-
-- fixed random seeds,
-- consistent train/test separation,
-- repeated evaluation,
-- stored result tables,
-- dedicated statistical-analysis scripts,
-- reproducibility tooling,
-- and a permanent Zenodo archive.
-
----
-
-## ML Engineering / MLOps
-
-The work also demonstrates an important MLOps principle:
-
-> Model behaviour is affected by the data pipeline that precedes the model.
-
-Reproducing only the trained model is not enough if the preprocessing sequence is different.
-
-Pipeline configuration is part of the experiment.
-
----
-
-# Repository architecture
-
-```text
-data-cleaning-order-sensitivity/
-│
-├── src/
-│   │
-│   ├── cleaning/
-│   │   └── methods.py
-│   │       └── Cleaning operations and sequencing logic
-│   │
-│   ├── data/
-│   │   ├── loaders.py
-│   │   └── Dataset loading and preparation
-│   │
-│   ├── faults/
-│   │   └── injection.py
-│   │       └── Controlled data-quality fault injection
-│   │
-│   ├── metrics/
-│   │   ├── evaluation_protocol.py
-│   │   ├── osi.py
-│   │   ├── statistics.py
-│   │   └── Performance and statistical evaluation
-│   │
-│   ├── models/
-│   │   └── Model-related utilities
-│   │
-│   └── utils/
-│       └── Shared experiment utilities
-│
-├── experiments/
-│   └── publication_runner.py
-│       └── Controlled permutation experiment runner
-│
-├── data/
-│   └── raw/
-│       └── Raw benchmark datasets
-│
-├── results/
-│   ├── figures/
-│   │   ├── operation_position_heatmap.png
-│   │   └── order_pattern_analysis.png
-│   │
-│   ├── tables/
-│   │   └── Experimental and statistical outputs
-│   │
-│   ├── METHODOLOGY_SECTION.txt
-│   └── THREATS_TO_VALIDITY.txt
-│
-├── analyze_5_datasets.py
-├── analyze_minority_class_impact.py
-├── analyze_operation_positions.py
-├── analyze_order_patterns.py
-├── compute_cliffs_delta.py
-├── compute_enhanced_statistics.py
-├── create_publication_tables.py
-├── generate_methodology_text.py
-├── reproduce_all.py
-├── requirements.txt
-└── README.md
-```
-
----
-
-# Code organisation
-
-The repository deliberately separates different concerns.
-
-### `src/data`
-
-Responsible for:
-
-- loading datasets,
-- preparing feature matrices,
-- encoding categorical variables,
-- and exposing consistent dataset interfaces.
-
----
-
-### `src/faults`
-
-Implements controlled data-quality degradation such as:
-
-- label corruption,
-- missing-value injection,
-- class-distribution manipulation,
-- and synthetic outliers.
-
----
-
-### `src/cleaning`
-
-Contains the preprocessing operations evaluated in the experiment.
-
-Examples include:
-
-- KNN-based missing-value imputation,
-- Isolation Forest,
-- SMOTE,
-- confidence-based label-noise handling.
-
----
-
-### `src/metrics`
-
-Contains evaluation logic including:
-
-- balanced accuracy,
-- OSI computation,
-- controlled evaluation protocol,
-- and statistical analysis.
-
----
-
-### `experiments`
-
-Contains the experiment runner responsible for generating all preprocessing permutations and evaluating them under fixed experimental conditions.
-
----
-
-### `results`
-
-Stores:
-
-- statistical tables,
-- analysis outputs,
-- figures,
-- methodology artifacts,
-- and reproducibility results.
-
----
-
-# Quick start
-
-## 1. Clone the repository
+## Quick start
 
 ```bash
 git clone https://github.com/idrees118/data-cleaning-order-sensitivity.git
 cd data-cleaning-order-sensitivity
-```
-
----
-
-## 2. Create a virtual environment
-
-### macOS / Linux
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-### Windows
-
-```powershell
-python -m venv .venv
-.venv\Scripts\activate
-```
-
----
-
-## 3. Install dependencies
-
-```bash
+python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Core packages include:
+Check that every dataset loads (this also downloads and caches the OpenML datasets):
+
+```bash
+python check_datasets.py
+```
+
+### Reproduce the results
+
+| Step | Command | What it produces |
+|---|---|---|
+| 1. Run one condition | `python run_extended.py --stage main` | Per-run results in `results/main/` |
+| 2. Analyse | `python analyze.py` | OSI, permutation tests, LNR-vs-BAL tests, position effects, transfer → `results/analysis/` |
+| 3. Mechanism | `python diagnostics.py` | Which labels the correction step fixed or broke |
+| 4. Robustness | `python robustness_r4.py` | Fold-safe correction, 20-seed stability, transfer |
+| 5. End-to-end check | `python e2e_foldsafe.py` | Fold-safe correction followed by the full pipeline |
+| 6. Thresholds and effect sizes | `python final_r5.py` | Correction thresholds 0.6–0.9, Hodges–Lehmann intervals |
+| 7. Figures | `python figures.py` | All figures, plus 17 automatic checks against the reported numbers |
+
+Stages for step 1: `main`, `clean`, `methods_b`, `subsets`, `high_ir`, `smote_050`, `smote_100`, `noise_05`, `noise_10`, `noise_20`, `noise_sym`, `seeds20`. Runs are checkpointed per seed, so you can stop a run and resume it later.
+
+The summary tables behind every result are already in `results/analysis/`, so steps 2–7 work without rerunning the full experiment. The per-run results are archived on Zenodo.
+
+---
+
+## Repository structure
 
 ```text
-NumPy
-pandas
-scikit-learn
-XGBoost
-imbalanced-learn
-SciPy
-statsmodels
-Matplotlib
-Seaborn
-PyYAML
-tqdm
+├── src/
+│   ├── data/loaders.py          # 12 datasets, nominal-feature handling, OpenML caching
+│   ├── faults/injection.py      # label flips, missing values, outliers, with a record of each
+│   ├── cleaning/methods.py      # the four steps (method set A)
+│   ├── cleaning/alternatives.py # method set B and oversampling-ratio variants
+│   ├── metrics/osi.py           # OSI and false-discovery-rate correction
+│   └── models/train.py          # classifiers and evaluation
+├── run_extended.py              # runs every pipeline for a condition
+├── analyze.py                   # permutation tests and all summary tables
+├── diagnostics.py               # grades label corrections against the known flips
+├── robustness_r4.py             # fold-safe correction and stability checks
+├── e2e_foldsafe.py              # end-to-end fold-safe comparison
+├── final_r5.py                  # threshold sensitivity and effect sizes
+├── figures.py                   # figures and consistency checks
+├── data/raw/                    # cached copies of the datasets
+├── figures/                     # all figures (PDF and PNG)
+└── results/analysis/            # summary tables behind every result
 ```
 
 ---
 
-# Running analysis
+## What this project demonstrates
 
-The repository contains dedicated scripts for different parts of the study.
-
-### Cross-dataset analysis
-
-```bash
-python analyze_5_datasets.py
-```
+- **Experimental design:** isolating one variable (step order) while holding the split, the errors, the seeds and the models fixed.
+- **Statistics:** permutation tests, false-discovery-rate and Holm corrections, exact Wilcoxon tests, Hodges–Lehmann intervals, and avoiding selection bias in best-vs-worst comparisons.
+- **Data quality engineering:** controlled fault injection with ground truth, so each cleaning decision can be audited.
+- **ML engineering:** leakage-safe pipelines (cross-validation inside the cleaning step, training-only fitting), handling mixed numeric and categorical data, and class imbalance.
+- **Reproducible research software:** seeded runs, checkpointing, code fingerprints, and automatic checks that the figures match the reported numbers.
 
 ---
 
-### Minority-class analysis
+## Versions
 
-```bash
-python analyze_minority_class_impact.py
-```
-
----
-
-### Operation-position analysis
-
-```bash
-python analyze_operation_positions.py
-```
-
----
-
-### Best/worst order pattern analysis
-
-```bash
-python analyze_order_patterns.py
-```
-
----
-
-### Cliff's delta
-
-```bash
-python compute_cliffs_delta.py
-```
-
----
-
-### Extended statistical analysis
-
-```bash
-python compute_enhanced_statistics.py
-```
-
----
-
-### Publication tables
-
-```bash
-python create_publication_tables.py
-```
-
----
-
-# Reproducibility
-
-The study uses five fixed random seeds:
-
-```python
-[42, 43, 44, 45, 46]
-```
-
-Each seed creates its own stratified train/test partition.
-
-Within that seed:
-
-- the test set remains clean,
-- all 24 pipeline orders use the same experimental split,
-- the same controlled degradation is used for the within-seed comparison,
-- and model settings remain fixed.
-
-This allows pipeline-order effects to be compared under controlled conditions.
-
----
-
-## Reproducibility helper
-
-The repository includes:
-
-```bash
-python reproduce_all.py
-```
-
-This script is designed to:
-
-- verify the Python environment,
-- inspect available experiment outputs,
-- run statistical validation,
-- regenerate publication tables,
-- regenerate methodology artifacts,
-- and check expected result files.
-
-The frozen experimental outputs and supporting data are also preserved in the Zenodo archive.
-
-For long-term research reproducibility, the Zenodo record should be treated as the permanent archived snapshot.
-
----
-
-# Output artifacts
-
-Analysis outputs are stored primarily under:
-
-```text
-results/
-```
-
-with:
-
-```text
-results/
-├── figures/
-├── tables/
-├── METHODOLOGY_SECTION.txt
-└── THREATS_TO_VALIDITY.txt
-```
-
-This separates generated research artifacts from source code.
-
----
-
-# Tech stack
-
-| Area | Tools |
+| Version | Description |
 |---|---|
-| Programming | **Python** |
-| Data processing | **pandas, NumPy** |
-| Machine learning | **scikit-learn, XGBoost** |
-| Class balancing | **imbalanced-learn / SMOTE** |
-| Missing-data handling | **KNNImputer** |
-| Outlier detection | **Isolation Forest** |
-| Statistical analysis | **SciPy, statsmodels** |
-| Visualisation | **Matplotlib, Seaborn** |
-| Experiment design | **exhaustive permutation testing** |
-| Reproducibility | **fixed seeds, stored outputs, Zenodo** |
-| Data-quality testing | **controlled fault injection** |
+| `main` | Current code, used for all results above. |
+| [`dmkd-v1`](https://github.com/idrees118/data-cleaning-order-sensitivity/tree/dmkd-v1) | Earlier release (7 datasets, 2,520 runs). It fitted a temporary imputer inside label correction before its cross-validation split; this is fixed on `main`, and the paper reports the effect of the fix. Kept for transparency. |
 
 ---
-
-# Skills demonstrated
-
-From an engineering perspective, this repository demonstrates work across:
-
-### Python engineering
-
-- modular source-code structure
-- reusable classes
-- experiment orchestration
-- configuration-driven workflows
-- logging
-- error handling
-- result persistence
-
-### Data engineering concepts
-
-- data ingestion
-- preprocessing pipelines
-- transformation sequencing
-- data-quality fault simulation
-- reproducibility
-- pipeline state dependence
-
-### Machine-learning engineering
-
-- train/test isolation
-- preprocessing design
-- class imbalance
-- model evaluation
-- multi-model experimentation
-
-### Experimental engineering
-
-- controlled variable isolation
-- exhaustive parameter/permutation search
-- multi-seed experiments
-- reproducible outputs
-- statistical validation
-
-### Research software
-
-- methodology implementation
-- automated analysis
-- publication table generation
-- permanent artifact archiving
-- reproducibility documentation
-
----
-
-# Research study
-
-This repository supports the study:
-
-## *The Order Sensitivity Index: Quantifying Preprocessing Pipeline Order Effects in Tabular Machine Learning*
-
-### Authors
-
-**Muhammad Idrees**  
-Adnan Amin  
-Feras Al-Obeidat  
-Kaizhu Huang  
-Fernando Moreira  
-Amir Hussain
-
----
-
-# My contribution
-
-My contribution to the project included:
-
-- study methodology development,
-- software development,
-- implementation of the experimental framework,
-- controlled data-quality fault injection,
-- preprocessing-pipeline experiments,
-- statistical analysis,
-- reproducibility workflow development,
-- and preparation of the original manuscript.
-
----
-
-# Research archive
-
-The code and experimental materials supporting the study are permanently archived on Zenodo.
-
-### DOI
-
-https://doi.org/10.5281/zenodo.20678671
-
-The Zenodo archive provides a permanent research snapshot independent of the evolving GitHub repository.
-
----
-
-# Limitations
-
-The results should be interpreted within the evaluated experimental setting.
-
-The study uses:
-
-- four specific cleaning operations,
-- seven main datasets,
-- three classifier families,
-- five random seeds,
-- predefined fault-injection settings,
-- and fixed cleaning/model hyperparameters.
-
-Different preprocessing implementations or substantially different data-quality conditions may produce different ordering effects.
-
-The experiment therefore demonstrates that preprocessing order **can be consequential**, rather than claiming that one universal order should be used for every dataset.
-
----
-
-# Main takeaway
-
-A preprocessing pipeline should not be described only by the operations it contains.
-
-The sequence matters too.
-
-```text
-Same dataset
-+
-Same cleaning methods
-+
-Same classifier
-+
-Different transformation order
-=
-Potentially different result
-```
-
-For reproducible data and machine-learning systems, it is therefore useful to record:
-
-```text
-WHAT transformations were applied
-
-            +
-
-HOW they were configured
-
-            +
-
-WHEN they were applied
-```
-
-Pipeline order is part of the pipeline.
-
----
-
-<div align="center">
-
-### Data Quality · Pipeline Engineering · Reproducibility · Machine Learning · Python
-
-[GitHub Repository](https://github.com/idrees118/data-cleaning-order-sensitivity)
-&nbsp;•&nbsp;
-[Zenodo Archive](https://doi.org/10.5281/zenodo.20678671)
-
-</div>
