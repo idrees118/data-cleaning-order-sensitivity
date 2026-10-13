@@ -14,8 +14,6 @@
 
 ---
 
-## In one minute
-
 Before a model is trained on tabular data, the data usually go through four repairs: **fill missing values, remove outliers, fix wrong labels, balance the classes**. Most pipelines apply them in whatever order is conventional. Each step changes the data the next step receives, so the order can change the final model.
 
 Measuring this is harder than it looks. If you try 24 orders on a few random train/test splits, the best and the worst will always differ, **even when order has no effect at all**. Most comparisons report that gap as if it were real.
